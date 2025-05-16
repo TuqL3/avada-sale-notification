@@ -3,11 +3,12 @@ import {Route, Switch} from 'react-router-dom';
 import Home from '@assets/loadables/Home/Home';
 import NotFound from '@assets/loadables/NotFound/NotFound';
 import Samples from '@assets/loadables/Samples/Samples';
-import Settings from '@assets/loadables/Settings/Settings';
+import Settings from '@assets/loadables/Settings';
 import OptionalScopes from '@assets/loadables/OptionalScopes/OptionalScopes';
 import {routePrefix} from '@assets/config/app';
 import Loading from '@assets/components/Loading';
 import Tables from '@assets/loadables/Tables/Tables';
+import NotificationLoadable from '@assets/loadables/Notification';
 
 const FullscreenPageA = React.lazy(() => import('../pages/FullscreenPageA'));
 
@@ -17,6 +18,7 @@ const Routes = ({prefix = routePrefix}) => (
     <Switch>
       <Route exact path={prefix + '/'} component={Home} />
       <Route exact path={prefix + '/samples'} component={Samples} />
+      <Route exact path={prefix + '/notification'} component={NotificationLoadable} />
       <Route exact path={prefix + '/settings'} component={Settings} />
       <Route exact path={prefix + '/fullscreen-page-a'} component={FullscreenPageA} />
       <Route exact path={prefix + '/optional-scopes'} component={OptionalScopes} />

@@ -1,5 +1,5 @@
 (function() {
-  const BASE_URL = 'https://ni-requirement-advocate-speaker.trycloudflare.com/scripttag';
+  const BASE_URL = 'https://complement-recorders-notebooks-brief.trycloudflare.com/scripttag';
 
   const scriptElement = document.createElement('script');
   scriptElement.type = 'text/javascript';

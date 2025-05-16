@@ -1,6 +1,5 @@
-import React, {useContext, useState} from 'react';
+import React, {useState} from 'react';
 import {BlockStack, Button, Card, InlineStack, Layout, Page, Text} from '@shopify/polaris';
-import {MaxModalContext} from '@assets/contexts/maxModalContext';
 
 /**
  * Render a home page for overview
@@ -10,16 +9,15 @@ import {MaxModalContext} from '@assets/contexts/maxModalContext';
  */
 export default function Home() {
   const [enabled, setEnabled] = useState(false);
-  const {openFullscreen} = useContext(MaxModalContext);
 
   return (
-    <Page title="Dashboard">
+    <Page title="Home">
       <Layout>
         <Layout.Section>
           <BlockStack gap="400">
             <Card>
               <InlineStack blockAlign="center">
-                <Text as="span">Our app is {enabled ? 'enabled' : 'disabled'} on your store</Text>
+                <Text as="span">App status is {enabled ? 'enabled' : 'disabled'}</Text>
                 <div style={{flex: 1}} />
                 <Button
                   variant={enabled ? 'secondary' : 'primary'}
@@ -27,14 +25,6 @@ export default function Home() {
                 >
                   {enabled ? 'Disable' : 'Enable'}
                 </Button>
-              </InlineStack>
-            </Card>
-            <Card>
-              <InlineStack gap="200" blockAlign="center">
-                <Text as="span">Fullscreen</Text>
-                <Button onClick={() => openFullscreen('/samples')}>Samples</Button>
-                <Button onClick={() => openFullscreen('/settings')}>Settings</Button>
-                <Button url="/fullscreen-page-a">Fullscreen page a</Button>
               </InlineStack>
             </Card>
           </BlockStack>
