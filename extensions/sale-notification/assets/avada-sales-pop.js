@@ -1,5 +1,5 @@
 (function() {
-  const BASE_URL = 'https://maple-com-camp-potter.trycloudflare.com/scripttag';
+  const BASE_URL = 'http://localhost:5000/scripttag';
 
   const scriptElement = document.createElement('script');
   scriptElement.type = 'text/javascript';

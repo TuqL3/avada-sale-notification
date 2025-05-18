@@ -8,7 +8,7 @@ import {Firestore} from '@google-cloud/firestore';
  */
 const firestore = new Firestore();
 /** @type CollectionReference */
-const settingRef = firestore.collection('settings');
+const setting = firestore.collection('settings');
 
 /**
  * @param {string} shopId
@@ -18,7 +18,7 @@ const settingRef = firestore.collection('settings');
 export async function addNewSetting(shopId, data) {
   const setting = await getSetting(shopId);
   if (!setting) {
-    return settingRef.add({
+    return setting.add({
       ...data,
       shopId: shopId
     });
@@ -31,7 +31,7 @@ export async function addNewSetting(shopId, data) {
  * @returns {Object}
  */
 export async function getSetting(shopId) {
-  const settingDocs = await settingRef
+  const settingDocs = await setting
     .where('shopId', '==', shopId)
     .limit(1)
     .get();
@@ -53,7 +53,7 @@ export async function getSetting(shopId) {
  * @returns
  */
 export async function updateSetting(shopId, updatedData) {
-  const settingDocs = await settingRef
+  const settingDocs = await setting
     .where('shopId', '==', shopId)
     .limit(1)
     .get();
@@ -63,7 +63,7 @@ export async function updateSetting(shopId, updatedData) {
   }
 
   const settingDoc = settingDocs.docs[0];
-  await settingRef.doc(settingDoc.id).update(updatedData);
+  await setting.doc(settingDoc.id).update(updatedData);
 }
 
 /**
@@ -72,7 +72,7 @@ export async function updateSetting(shopId, updatedData) {
  * @returns {Object}
  */
 export async function getSettingsByDomain(shopifyDomain) {
-  const settingDocs = await settingRef
+  const settingDocs = await setting
     .where('shopifyDomain', '==', shopifyDomain)
     .limit(1)
     .get();
@@ -97,10 +97,10 @@ export async function getSettingsByDomain(shopifyDomain) {
  * @param {string} shopId
  */
 export async function deleteSetting(shopId) {
-  const settingDocs = await settingRef.where('shopId', '==', shopId).get();
+  const settingDocs = await setting.where('shopId', '==', shopId).get();
   if (settingDocs.empty) {
     return;
   }
   const settingIDs = settingDocs.docs.map(doc => doc.id);
-  await settingRef.doc(settingIDs[0]).delete();
+  await setting.doc(settingIDs[0]).delete();
 }

@@ -3,7 +3,7 @@
 client_id = "c0518024efd9f94ec9a1b8c21cbaa4a1"
 name = "sale-notifi"
 handle = "sale-notifi"
-application_url = "https://complement-recorders-notebooks-brief.trycloudflare.com/auth/shopify"
+application_url = "https://maple-com-camp-potter.trycloudflare.com/auth/shopify"
 embedded = true
 
 [build]
@@ -12,10 +12,10 @@ dev_store_url = "elgnut.myshopify.com"
 
 [auth]
 redirect_urls = [
-  "https://complement-recorders-notebooks-brief.trycloudflare.com/auth/shopify/callback",
-  "https://complement-recorders-notebooks-brief.trycloudflare.com/authSa/shopify/callback",
-  "https://complement-recorders-notebooks-brief.trycloudflare.com/auth/shopify/embed/callback",
-  "https://complement-recorders-notebooks-brief.trycloudflare.com/auth/shopify/embed/callback/updateScopes",
+  "https://maple-com-camp-potter.trycloudflare.com/auth/shopify/callback",
+  "https://maple-com-camp-potter.trycloudflare.com/authSa/shopify/callback",
+  "https://maple-com-camp-potter.trycloudflare.com/auth/shopify/embed/callback",
+  "https://maple-com-camp-potter.trycloudflare.com/auth/shopify/embed/callback/updateScopes",
   "https://localhost:3000/auth/shopify/callback",
   "https://localhost:3000/authSa/shopify/callback",
   "https://localhost:3000/auth/shopify/embed/callback"

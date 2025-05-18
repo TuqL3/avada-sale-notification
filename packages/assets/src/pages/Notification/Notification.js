@@ -7,17 +7,15 @@ import {
   ResourceList,
   Text
 } from '@shopify/polaris';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from "react";
 import NotificationPopup from '../../components/NotificationPopup/NotificationPopup';
 import useFetchApi from '../../hooks/api/useFetchApi';
 import moment from 'moment';
 import usePaginate from '../../hooks/api/usePaginate';
 import useDeleteApi from '../../hooks/api/useDeleteApi';
-
 export default function Notifications() {
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [sortValue, setSortValue] = useState('createdAt:desc');
-
   const {
     data: items,
     loading,

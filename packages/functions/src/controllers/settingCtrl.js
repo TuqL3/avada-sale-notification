@@ -3,7 +3,8 @@ import {getSetting, updateSetting, addNewSetting} from '../repositories/settingR
 
 export async function handleAddNewSetting(ctx) {
   try {
-    const shopId = getCurrentShop(ctx);
+    // const shopId = getCurrentShop(ctx);
+    const shopId = 'm0veLlBS9keS3GzxvzMJROGvQdB2'
     const data = ctx.req.body;
     const newSetting = await addNewSetting(shopId, data);
 
@@ -24,6 +25,7 @@ export async function handleAddNewSetting(ctx) {
 export async function handleGetSetting(ctx) {
   try {
     const shopId = getCurrentShop(ctx);
+    // const shopId = 'm0veLlBS9keS3GzxvzMJROGvQdB2'
     const setting = await getSetting(shopId);
 
     ctx.status = 200;
@@ -43,6 +45,7 @@ export async function handleGetSetting(ctx) {
 export async function handleUpdateSetting(ctx) {
   try {
     const shopId = getCurrentShop(ctx);
+    // const shopId = 'm0veLlBS9keS3GzxvzMJROGvQdB2'
     const updatedData = ctx.req.body;
     await updateSetting(shopId, updatedData);
     ctx.status = 200;

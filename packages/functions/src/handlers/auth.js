@@ -1,6 +1,6 @@
 import App from 'koa';
 import 'isomorphic-fetch';
-import {contentSecurityPolicy, shopifyAuth} from '@avada/core';
+import {contentSecurityPolicy, getShopByShopifyDomain, shopifyAuth} from '@avada/core';
 import shopifyConfig from '@functions/config/shopify';
 import render from 'koa-ejs';
 import path from 'path';
@@ -8,6 +8,7 @@ import createErrorHandler from '@functions/middleware/errorHandler';
 import firebase from 'firebase-admin';
 import appConfig from '@functions/config/app';
 import shopifyOptionalScopes from '@functions/config/shopifyOptionalScopes';
+import {syncNotifications} from '@functions/repositories/notificationRepo';
 
 if (firebase.apps.length === 0) {
   firebase.initializeApp();
@@ -50,6 +51,15 @@ app.use(
       return (ctx.body = {
         success: true
       });
+    },
+    afterInstall: async ctx => {
+      try {
+        const shopifyDomain = ctx.state.shopify.shop;
+        const shop = await getShopByShopifyDomain(shopifyDomain);
+        await syncNotifications(shopifyDomain, shop.uid, shop.accessTokenHash);
+      } catch (e) {
+        console.log(e);
+      }
     },
     optionalScopes: shopifyOptionalScopes
   }).routes()

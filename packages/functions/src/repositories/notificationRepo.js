@@ -1,5 +1,5 @@
 import {Firestore} from '@google-cloud/firestore';
-import {getOrders} from '@functions/services/getOrder';
+import Shopify from 'shopify-api-node';
 
 /**
  * @documentation
@@ -160,38 +160,44 @@ export async function getNotifications({shopId, page = '1', limit = '5', sort = 
  * @returns
  */
 export async function syncNotifications({shopifyDomain, shopId, accessToken}) {
-  const response = await getOrders(shopifyDomain, accessToken);
-
-  if (!response.orders.edges) return {};
-
-  const orders = response.orders.edges.map(item => {
-    if (!item.node) return {};
-
-    const nodeItem = item.node;
-    const billingAddress = nodeItem.billingAddress;
-    const lineItems = nodeItem.lineItems;
-    const lineItemsNode = lineItems.edges[0].node;
-
-    if (!billingAddress || !lineItems || !lineItemsNode) return {};
-
-    const productID = lineItemsNode.product.id.split('/').pop();
-
-    const notification = {
-      timestamp: new Date(nodeItem.createdAt),
-      firstName: billingAddress.firstName,
-      city: billingAddress.city,
-      country: billingAddress.country,
-      productName: lineItemsNode.name,
-      productImage: lineItemsNode.product.featuredImage.url,
-      productId: productID,
-      shopId: shopId,
-      shopifyDomain: shopifyDomain
-    };
-    return notificationsRef.add(notification);
+  const shopify = new Shopify({
+    shopName: shopifyDomain,
+    accessToken
   });
-  await Promise.all(orders);
-}
 
+  try {
+    const orders = await shopify.order.list({limit: 30});
+
+    if (!orders || orders.length === 0) return {};
+
+    const tasks = orders.map(order => {
+      const Address = order.billing_address;
+      const Items = order.line_items;
+      const firstItem = Items[0];
+
+      if (!Address || !firstItem || !firstItem.product_id) return;
+
+      const notification = {
+        timestamp: new Date(order.created_at),
+        firstName: Address.first_name,
+        city: Address.city,
+        country: Address.country,
+        productName: firstItem.name,
+        productImage: firstItem.image ? firstItem.image.src : '',
+        productId: firstItem.product_id.toString(),
+        shopId,
+        shopifyDomain
+      };
+
+      return notificationsRef.add(notification);
+    });
+
+    await Promise.all(tasks);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+}
 /**
  *
  * @param {string} shopifyDomain
