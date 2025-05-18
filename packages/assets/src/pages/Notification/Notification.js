@@ -7,42 +7,47 @@ import {
   ResourceList,
   Text
 } from '@shopify/polaris';
-import React, { useEffect, useState } from "react";
+import React, {useCallback, useMemo, useState} from 'react';
 import NotificationPopup from '../../components/NotificationPopup/NotificationPopup';
-import useFetchApi from '../../hooks/api/useFetchApi';
 import moment from 'moment';
 import usePaginate from '../../hooks/api/usePaginate';
-import useDeleteApi from '../../hooks/api/useDeleteApi';
+
 export default function Notifications() {
-  const [selectedProducts, setSelectedProducts] = useState([]);
-  const [sortValue, setSortValue] = useState('createdAt:desc');
-  const {
-    data: items,
-    loading,
-    fetched,
-    pageInfo,
-    count,
-    nextPage,
-    prevPage,
-    onQueryChange
-  } = usePaginate({
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [sortOrder, setSortOrder] = useState('createdAt:desc');
+
+  const {data: notifications, loading, pageInfo, nextPage, prevPage, onQueryChange} = usePaginate({
     url: '/notifications',
-    defaultSort: sortValue,
-    defaultLimit: 10,
+    defaultSort: sortOrder,
+    defaultLimit: 10
   });
 
-  const resourceName = {
-    singular: 'notification',
-    plural: 'notifications'
-  };
+  const resourceName = useMemo(
+    () => ({
+      singular: 'notification',
+      plural: 'notifications'
+    }),
+    []
+  );
 
-  const sortOptions = [
-    { label: 'Newest update', value: 'createdAt:desc' },
-    { label: 'Oldest update', value: 'createdAt:asc' }
-  ];
+  const sortOptions = useMemo(
+    () => [
+      {label: 'Newest update', value: 'createdAt:desc'},
+      {label: 'Oldest update', value: 'createdAt:asc'}
+    ],
+    []
+  );
 
-  const renderItem = item => {
-    const { id, firstName, city, country, productName, timestamp, productImage } = item;
+  const handleSortChange = useCallback(
+    selected => {
+      setSortOrder(selected);
+      onQueryChange('sort', selected, true);
+    },
+    [onQueryChange]
+  );
+
+  const renderNotificationItem = useCallback(notification => {
+    const {id, firstName, city, country, productName, timestamp, productImage} = notification;
 
     return (
       <ResourceItem id={id}>
@@ -59,29 +64,26 @@ export default function Notifications() {
             />
           </LegacyStack.Item>
           <BlockStack inlineAlign="end">
-            <Text>From {moment(timestamp).format('MMM DD')},</Text>
+            <Text>From {moment(timestamp).format('MMM DD')}</Text>
             <Text>{moment(timestamp).format('YYYY')}</Text>
           </BlockStack>
         </LegacyStack>
       </ResourceItem>
     );
-  };
+  }, []);
 
   return (
-    <Page title="Notifications" subtitle="List of sales notifcation from Shopify" fullWidth>
+    <Page title="Notifications" subtitle="List of sales notifications from Shopify" fullWidth>
       <Card>
         <ResourceList
           resourceName={resourceName}
-          items={items}
-          renderItem={renderItem}
-          selectedItems={selectedProducts}
-          onSelectionChange={setSelectedProducts}
+          items={notifications}
+          renderItem={renderNotificationItem}
+          selectedItems={selectedItems}
+          onSelectionChange={setSelectedItems}
           sortOptions={sortOptions}
-          sortValue={sortValue}
-          onSortChange={selected => {
-            setSortValue(selected);
-            onQueryChange('sort', selected, true);
-          }}
+          sortValue={sortOrder}
+          onSortChange={handleSortChange}
           loading={loading}
           selectable
         />

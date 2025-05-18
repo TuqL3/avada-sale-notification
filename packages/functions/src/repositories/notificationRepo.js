@@ -1,76 +1,36 @@
 import {Firestore} from '@google-cloud/firestore';
 import Shopify from 'shopify-api-node';
 
-/**
- * @documentation
- *
- * Only use one repository to connect to one collection
- * do not connect more than one collection from one repository
- */
 const firestore = new Firestore();
-/** @type CollectionReference */
-const notificationsRef = firestore.collection('notifications');
+const notifi = firestore.collection('notifications');
 
-/**
- * @param {string} shopId
- * @param {string} shopifyDomain
- * @param {Object} data
- * @returns {Object}
- */
 export async function addNewNotification({shopId, shopifyDomain, data}) {
-  await notificationsRef.add({
-    ...data,
+  await notifi.add({
     shopId: shopId,
-    shopifyDomain: shopifyDomain
+    shopifyDomain: shopifyDomain,
+    ...data
   });
 }
 
-/**
- *
- * @param {Shopify} shopify
- * @param {Object} orderData
- * @returns {Object}
- */
 export async function getNotificationItem(shopify, orderData) {
-  if (!orderData) return {};
-
-  const line_items = orderData.line_items;
-  const billing_address = orderData.billing_address;
-
-  if (!line_items || !billing_address) return {};
-
-  const productWithId = await shopify.product.get(line_items[0].product_id);
-
-  if (!productWithId || !productWithId.images) return {};
-
-  const notification = {
+  if (!orderData.line_items || !orderData.billing_address) return {};
+  return {
     timestamp: new Date(orderData.created_at),
-    firstName: billing_address.first_name,
-    city: billing_address.city,
-    country: billing_address.country,
-    productId: line_items[0].product_id,
-    productName: line_items[0].name,
-    productImage: productWithId.images[0].src
+    firstName: orderData.billing_address.first_name,
+    city: orderData.billing_address.city,
+    country: orderData.billing_address.country,
+    productId: orderData.line_items[0].product_id,
+    productName: orderData.line_items[0].name,
+    productImage: orderData.line_items.images[0].src
   };
-
-  return notification;
 }
-
-/**
- *
- * @param {string} shopId
- * @param {string} page
- * @param {string} limit
- * @param {string} sort
- * @returns {Object}
- */
 
 export async function getNotifications({shopId, page = '1', limit = '5', sort = 'desc'}) {
   const pageNum = parseInt(page, 10);
   const limitNum = parseInt(limit, 10);
   const order = sort === 'asc' ? 'asc' : 'desc';
 
-  const baseQuery = notificationsRef.where('shopId', '==', shopId);
+  const baseQuery = notifi.where('shopId', '==', shopId);
 
   const countSnapshot = await baseQuery.get();
   const count = countSnapshot.size;
@@ -120,121 +80,78 @@ export async function getNotifications({shopId, page = '1', limit = '5', sort = 
   };
 }
 
-// export async function getNotifications({shopId, page = '1', limit = '5', sort = 'desc'}) {
-//   const baseQuery = notificationsRef.where('shopId', '==', shopId);
-//   const countRef = baseQuery.get();
-//   const paginateNotifications = baseQuery
-//     .orderBy('timestamp', sort === 'asc' ? 'asc' : 'desc')
-//     .limit(parseInt(limit))
-//     .offset((parseInt(page) - 1) * parseInt(limit))
-//     .get();
-//   const [countSnapshot, notificationsSnapshot] = await Promise.all([
-//     countRef,
-//     paginateNotifications
-//   ]);
-//
-//   if (countRef.empty || paginateNotifications.empty) {
-//     return null;
-//   }
-//   const count = countSnapshot.size;
-//   const notifications = notificationsSnapshot.docs.map(doc => {
-//     return {
-//       ...doc.data(),
-//       id: doc.id
-//     };
-//   });
-//   const pageInfo = {
-//     page: parseInt(page),
-//     limit: parseInt(limit),
-//     sort
-//   };
-//
-//   return {count, pageInfo, notifications};
-// }
-
-/**
- *
- * @param {string} shopifyDomain
- * @param {string} shopId
- * @param {string} accessToken
- * @returns
- */
 export async function syncNotifications({shopifyDomain, shopId, accessToken}) {
   const shopify = new Shopify({
     shopName: shopifyDomain,
-    accessToken
+    accessToken,
   });
 
   try {
     const orders = await shopify.order.list({limit: 30});
+    if (!Array.isArray(orders) || orders.length === 0) return {};
 
-    if (!orders || orders.length === 0) return {};
+    const validOrders = orders.filter(
+      order =>
+        order?.billing_address &&
+        Array.isArray(order.line_items) &&
+        order.line_items.length > 0 &&
+        order.line_items[0].product_id
+    );
 
-    const tasks = orders.map(order => {
-      const Address = order.billing_address;
-      const Items = order.line_items;
-      const firstItem = Items[0];
-
-      if (!Address || !firstItem || !firstItem.product_id) return;
+    const tasks = validOrders.map(order => {
+      const {billing_address: address, created_at, line_items} = order;
+      const item = line_items[0];
 
       const notification = {
-        timestamp: new Date(order.created_at),
-        firstName: Address.first_name,
-        city: Address.city,
-        country: Address.country,
-        productName: firstItem.name,
-        productImage: firstItem.image ? firstItem.image.src : '',
-        productId: firstItem.product_id.toString(),
+        timestamp: new Date(created_at),
+        firstName: address.first_name,
+        city: address.city,
+        country: address.country,
+        productName: item.name,
+        productImage: item.image?.src || '',
+        productId: String(item.product_id),
         shopId,
         shopifyDomain
       };
 
-      return notificationsRef.add(notification);
+      return notifi.add(notification);
     });
 
-    await Promise.all(tasks);
+    const results = await Promise.allSettled(tasks);
+    const failed = results.filter(r => r.status === 'rejected');
+
+    if (failed.length > 0) {
+      console.warn(`${failed.length} notification(s) failed to sync.`);
+    }
+
+    return {success: true, failedCount: failed.length};
   } catch (err) {
-    console.error(err);
+    console.error('Failed to sync notifications:', err.message || err);
     throw err;
   }
 }
-/**
- *
- * @param {string} shopifyDomain
- * @returns {Object}
- */
-export const getNotificationsByDomain = async (shopifyDomain, maxPopsDisplay = 30) => {
-  const notificationsDocs = await notificationsRef
-    .where('shopifyDomain', '==', shopifyDomain)
-    .orderBy('timestamp', 'desc')
-    .limit(maxPopsDisplay)
-    .get();
-  if (notificationsDocs.empty) {
-    return null;
+
+export const getNotificationsByDomain = async (domain, limitCount = 30) => {
+  try {
+    const snapshot = await notifi
+      .where('shopifyDomain', '==', domain)
+      .orderBy('timestamp', 'desc')
+      .limit(limitCount)
+      .get();
+
+    if (snapshot.empty) return [];
+
+    return snapshot.docs.map(doc => {
+      // eslint-disable-next-line no-unused-vars
+      const {shopId, ...notificationData} = doc.data();
+      return {
+        id: doc.id,
+        ...notificationData
+      };
+    });
+
+  } catch (error) {
+    console.error('Failed to fetch notifications:', error.message || error);
+    return [];
   }
-  const notifications = notificationsDocs.docs.map(doc => {
-    return {
-      ...doc.data(),
-      id: doc.id
-    };
-  });
-
-  const notificationsHidedShopId = notifications.map(notification => {
-    return Object.fromEntries(Object.entries(notification).filter(([key]) => key !== 'shopId'));
-  });
-
-  return notificationsHidedShopId;
 };
-
-/**
- *
- * @param {string} shopId
- */
-export async function deleteNotifications(shopId) {
-  const notificationDocs = await notificationsRef.where('shopId', '==', shopId).get();
-  if (notificationDocs.empty) {
-    return;
-  }
-  const notificationIds = notificationDocs.docs.map(doc => doc.id);
-  await Promise.all(notificationIds.map(id => notificationsRef.doc(id).delete()));
-}
