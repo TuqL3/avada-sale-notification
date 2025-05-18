@@ -9,6 +9,8 @@ import firebase from 'firebase-admin';
 import appConfig from '@functions/config/app';
 import shopifyOptionalScopes from '@functions/config/shopifyOptionalScopes';
 import {syncNotifications} from '@functions/repositories/notificationRepo';
+import Shopify from 'shopify-api-node';
+import url from '../../../functions/.runtimeconfig.json';
 
 if (firebase.apps.length === 0) {
   firebase.initializeApp();
@@ -56,7 +58,15 @@ app.use(
       try {
         const shopifyDomain = ctx.state.shopify.shop;
         const shop = await getShopByShopifyDomain(shopifyDomain);
+        const shopify = new Shopify({
+          shopName: shopifyDomain,
+          accessToken: shop.accessTokenHash
+        });
         await syncNotifications(shopifyDomain, shop.uid, shop.accessTokenHash);
+        await shopify.webhook.create({
+          address: `https://${url.app.base_url}/webhook/order/new`,
+          topic: 'ORDERS_CREATE'
+        });
       } catch (e) {
         console.log(e);
       }
